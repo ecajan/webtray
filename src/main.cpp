@@ -1,3 +1,4 @@
+#include <QtCore/QTimer>
 #include <QtGui/QCloseEvent>
 #include <QtWebEngineCore/QWebEngineNotification>
 #include <QtWebEngineCore/QWebEnginePage>
@@ -27,19 +28,19 @@ int
 main(int argc, char **argv)
 {
 	QApplication app(argc, argv);
-	bool start_hidden = false;
+	bool start_hidden = true;
 	QUrl url;
 
 	for (auto argument : app.arguments()) {
-		if (argument == "--hidden") {
-			start_hidden = true;
+		if (argument == "--open-at-startup") {
+			start_hidden = false;
 		} else {
 			url = argument;
 		}
 	}
 
 	if (url.url().toStdString() == argv[0]) {
-		std::cerr << "webtray <url> [--hidden]\n";
+		std::cerr << "webtray <url> [--open-at-startup]\n";
 		return -1;
 	}
 
@@ -158,10 +159,10 @@ main(int argc, char **argv)
 							 });
 
 	main_window.setCentralWidget(&view);
-	if (!start_hidden) {
-		main_window.show();
-	} else {
-		tray.show();
+	main_window.show();
+	if (start_hidden) {
+		main_window.hide();
 	}
+	app.setQuitOnLastWindowClosed(false);
 	return app.exec();
 }

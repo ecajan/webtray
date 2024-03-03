@@ -5,7 +5,7 @@ This project helps you to create web-apps which you can dock into the systray.
 ## Usage
 
 ```sh
-webtray <url> [--hidden]
+webtray <url> [--open-at-startup]
 ```
 
 If you use `--hidden` it will start in the systray.
