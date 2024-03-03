@@ -9,13 +9,12 @@ class PermissionManager
 {
 private:
 	std::string path;
-	bool _lock_mouse = false;
-	bool _location = false;
-	bool _notification = false;
-	bool _media_audio_capture = false;
-	bool _media_video_capture = false;
-	bool _desktop_video_capture = false;
-	bool _desktop_audio_video_capture = false;
+	bool lock_mouse = false;
+	bool location = false;
+	bool notification = false;
+	bool media_audio_capture = false;
+	bool media_video_capture = false;
+	bool desktop_audio_video_capture = false;
 
 public:
 	PermissionManager(std::string path);

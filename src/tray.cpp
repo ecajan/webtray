@@ -11,8 +11,6 @@ Tray::Tray()
 	this->permissions.camera = this->settings.addAction("Allow Camera");
 	this->permissions.microphone = this->settings.addAction("Allow Microphone");
 	this->permissions.screenshare = this->settings.addAction("Allow Screenshare");
-	this->permissions.system_audio =
-		this->settings.addAction("Allow System Audio Record");
 	this->permissions.notifications =
 		this->settings.addAction("Allow Notifications");
 	this->permissions.location = this->settings.addAction("Allow Location");
@@ -23,7 +21,6 @@ Tray::Tray()
 	this->permissions.camera->setCheckable(true);
 	this->permissions.microphone->setCheckable(true);
 	this->permissions.screenshare->setCheckable(true);
-	this->permissions.system_audio->setCheckable(true);
 	this->permissions.notifications->setCheckable(true);
 	this->permissions.location->setCheckable(true);
 	this->permissions.lock_mouse->setCheckable(true);
@@ -59,14 +56,9 @@ Tray::Tray()
 					QWebEnginePage::Feature::MediaAudioCapture,
 					this->permissions.microphone->isChecked());
 
-			} else if (action == this->permissions.system_audio) {
-				this->permission_changed_signal(
-					QWebEnginePage::Feature::DesktopAudioVideoCapture,
-					this->permissions.system_audio->isChecked());
-
 			} else if (action == this->permissions.screenshare) {
 				this->permission_changed_signal(
-					QWebEnginePage::Feature::DesktopVideoCapture,
+					QWebEnginePage::Feature::DesktopAudioVideoCapture,
 					this->permissions.screenshare->isChecked());
 
 			} else if (action == this->permissions.notifications) {
@@ -133,4 +125,31 @@ Tray::send_notification(std::unique_ptr<QWebEngineNotification> notification)
 void
 Tray::set_permission(QWebEnginePage::Feature feature, bool value)
 {
+	switch (feature) {
+		case QWebEnginePage::Feature::MouseLock:
+			this->permissions.lock_mouse->setChecked(value);
+			break;
+		case QWebEnginePage::Feature::Geolocation:
+			this->permissions.location->setChecked(value);
+			break;
+		case QWebEnginePage::Feature::Notifications:
+			this->permissions.notifications->setChecked(value);
+			break;
+		case QWebEnginePage::Feature::MediaAudioCapture:
+			this->permissions.microphone->setChecked(value);
+			break;
+		case QWebEnginePage::Feature::MediaVideoCapture:
+			this->permissions.camera->setChecked(value);
+			break;
+		case QWebEnginePage::Feature::MediaAudioVideoCapture:
+			this->permissions.microphone->setChecked(value);
+			this->permissions.camera->setChecked(value);
+			break;
+		case QWebEnginePage::Feature::DesktopVideoCapture:
+			this->permissions.screenshare->setChecked(value);
+			break;
+		case QWebEnginePage::Feature::DesktopAudioVideoCapture:
+			this->permissions.screenshare->setChecked(value);
+			break;
+	}
 }

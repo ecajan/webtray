@@ -19,7 +19,6 @@ private:
 		QAction *camera;
 		QAction *microphone;
 		QAction *screenshare;
-		QAction *system_audio;
 		QAction *notifications;
 		QAction *location;
 		QAction *lock_mouse;

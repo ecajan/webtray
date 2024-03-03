@@ -8,53 +8,54 @@
 
 WebWindow::WebWindow(const QString &url)
 	: QMainWindow()
-	, _profile(QUrl(url).host())
-	, _page(&_profile)
-	, _permissions((QUrl(url).host() + "/permissions.state").toStdString())
+	, profile(QUrl(url).host())
+	, page(&profile)
+	, perm((profile.persistentStoragePath() + "/permissions.state").toStdString())
 {
 	this->web_configure();
 
-	this->_profile.setPersistentCookiesPolicy(QWebEngineProfile::ForcePersistentCookies);
+	this->profile.setPersistentCookiesPolicy(
+		QWebEngineProfile::ForcePersistentCookies);
 
-	this->_view.setPage(&this->_page);
-	this->_view.setUrl(url);
+	this->view.setPage(&this->page);
+	this->view.setUrl(url);
 
-	this->setCentralWidget(&this->_view);
+	this->setCentralWidget(&this->view);
 }
 
 void
 WebWindow::web_configure()
 {
-	this->_page.settings()->setAttribute(QWebEngineSettings::ScreenCaptureEnabled,
-	                                     true);
+	this->page.settings()->setAttribute(QWebEngineSettings::ScreenCaptureEnabled,
+	                                    true);
 
-	this->_page.settings()->setAttribute(
+	this->page.settings()->setAttribute(
 		QWebEngineSettings::WebRTCPublicInterfacesOnly, false);
 
-	this->_page.settings()->setAttribute(
-		QWebEngineSettings::ScrollAnimatorEnabled, false);
+	this->page.settings()->setAttribute(QWebEngineSettings::ScrollAnimatorEnabled,
+	                                    false);
 
-	this->_profile.setPushServiceEnabled(true);
+	this->profile.setPushServiceEnabled(true);
 
-	this->_page.connect(&this->_page,
-	                    &QWebEnginePage::featurePermissionRequested,
-	                    [&](const QUrl origin, QWebEnginePage::Feature feature) {
-												this->permission_requested(origin, feature);
-											});
+	this->page.connect(&this->page,
+	                   &QWebEnginePage::featurePermissionRequested,
+	                   [&](const QUrl origin, QWebEnginePage::Feature feature) {
+											 this->permission_requested(origin, feature);
+										 });
 }
 
 void
 WebWindow::permission_requested(const QUrl origin,
                                 QWebEnginePage::Feature feature)
 {
-	if (this->_permissions.get(feature)) {
-		this->_page.setFeaturePermission(
+	if (this->perm.get(feature)) {
+		this->page.setFeaturePermission(
 			origin, feature, QWebEnginePage::PermissionGrantedByUser);
 	} else {
-		this->_page.setFeaturePermission(
+		this->page.setFeaturePermission(
 			origin, feature, QWebEnginePage::PermissionDeniedByUser);
 	}
-	this->_page.setFeaturePermission(
+	this->page.setFeaturePermission(
 		origin, feature, QWebEnginePage::PermissionUnknown);
 }
 
@@ -68,37 +69,37 @@ WebWindow::closeEvent(QCloseEvent *event)
 void
 WebWindow::connect_icon_changed(std::function<void(const QIcon)> fn)
 {
-	this->_view.connect(&this->_view, &QWebEngineView::iconChanged, fn);
+	this->view.connect(&this->view, &QWebEngineView::iconChanged, fn);
 }
 
 void
 WebWindow::connect_notification(
 	std::function<void(std::unique_ptr<QWebEngineNotification>)> fn)
 {
-	this->_profile.setNotificationPresenter(fn);
+	this->profile.setNotificationPresenter(fn);
 }
 
 void
 WebWindow::connect_title_changed(std::function<void(const QString)> fn)
 {
-	this->_view.connect(&this->_view, &QWebEngineView::titleChanged, fn);
+	this->view.connect(&this->view, &QWebEngineView::titleChanged, fn);
 }
 
-void
-WebWindow::set_feature(QWebEnginePage::Feature feature, bool value)
+PermissionManager &
+WebWindow::permissions()
 {
-	this->_permissions.set(feature, value);
+	return this->perm;
 }
 
 void
 WebWindow::reset_cookies()
 {
-	this->_profile.cookieStore()->deleteAllCookies();
-	this->_profile.cookieStore()->loadAllCookies();
-	this->_profile.clearHttpCache();
-	this->_profile.clearAllVisitedLinks();
-	this->_profile.clientCertificateStore();
-	this->_view.reload();
+	this->profile.cookieStore()->deleteAllCookies();
+	this->profile.cookieStore()->loadAllCookies();
+	this->profile.clearHttpCache();
+	this->profile.clearAllVisitedLinks();
+	this->profile.clientCertificateStore();
+	this->view.reload();
 }
 
 void

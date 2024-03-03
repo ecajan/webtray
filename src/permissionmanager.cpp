@@ -1,4 +1,5 @@
 #include "permissionmanager.hpp"
+#include <iostream>
 
 PermissionManager::PermissionManager(std::string path)
 	: path(path)
@@ -6,13 +7,12 @@ PermissionManager::PermissionManager(std::string path)
 	if (std::filesystem::exists(this->path)) {
 		std::ifstream in(path);
 		std::string content;
-		in >> this->_lock_mouse;
-		in >> this->_location;
-		in >> this->_notification;
-		in >> this->_media_audio_capture;
-		in >> this->_media_video_capture;
-		in >> this->_desktop_video_capture;
-		in >> this->_desktop_audio_video_capture;
+		in >> this->lock_mouse;
+		in >> this->location;
+		in >> this->notification;
+		in >> this->media_audio_capture;
+		in >> this->media_video_capture;
+		in >> this->desktop_audio_video_capture;
 	}
 }
 
@@ -25,13 +25,17 @@ void
 PermissionManager::save()
 {
 	std::ofstream out(this->path);
-	out << this->_lock_mouse;
-	out << this->_location;
-	out << this->_notification;
-	out << this->_media_audio_capture;
-	out << this->_media_video_capture;
-	out << this->_desktop_video_capture;
-	out << this->_desktop_audio_video_capture;
+	out << this->lock_mouse;
+	out << " ";
+	out << this->location;
+	out << " ";
+	out << this->notification;
+	out << " ";
+	out << this->media_audio_capture;
+	out << " ";
+	out << this->media_video_capture;
+	out << " ";
+	out << this->desktop_audio_video_capture;
 }
 
 bool
@@ -39,21 +43,21 @@ PermissionManager::get(QWebEnginePage::Feature feature)
 {
 	switch (feature) {
 		case QWebEnginePage::Feature::MouseLock:
-			return this->_lock_mouse;
+			return this->lock_mouse;
 		case QWebEnginePage::Feature::Geolocation:
-			return this->_location;
+			return this->location;
 		case QWebEnginePage::Feature::Notifications:
-			return this->_notification;
+			return this->notification;
 		case QWebEnginePage::Feature::MediaAudioCapture:
-			return this->_media_audio_capture;
+			return this->media_audio_capture;
 		case QWebEnginePage::Feature::MediaVideoCapture:
-			return this->_media_video_capture;
+			return this->media_video_capture;
 		case QWebEnginePage::Feature::MediaAudioVideoCapture:
-			return this->_media_video_capture && this->_media_audio_capture;
+			return this->media_video_capture && this->media_audio_capture;
 		case QWebEnginePage::Feature::DesktopVideoCapture:
-			return this->_desktop_video_capture;
+			return this->desktop_audio_video_capture;
 		case QWebEnginePage::Feature::DesktopAudioVideoCapture:
-			return this->_desktop_audio_video_capture;
+			return this->desktop_audio_video_capture;
 		default:
 			/* unreachable except QWebEnginePage::Feature gets new entries */
 			return false;
@@ -65,29 +69,29 @@ PermissionManager::set(QWebEnginePage::Feature feature, bool value)
 {
 	switch (feature) {
 		case QWebEnginePage::Feature::MouseLock:
-			this->_lock_mouse = value;
+			this->lock_mouse = value;
 			break;
 		case QWebEnginePage::Feature::Geolocation:
-			this->_location = value;
+			this->location = value;
 			break;
 		case QWebEnginePage::Feature::Notifications:
-			this->_notification = value;
+			this->notification = value;
 			break;
 		case QWebEnginePage::Feature::MediaAudioCapture:
-			this->_media_audio_capture = value;
+			this->media_audio_capture = value;
 			break;
 		case QWebEnginePage::Feature::MediaVideoCapture:
-			this->_media_video_capture = value;
+			this->media_video_capture = value;
 			break;
 		case QWebEnginePage::Feature::MediaAudioVideoCapture:
-			this->_media_audio_capture = value;
-			this->_media_video_capture = value;
+			this->media_audio_capture = value;
+			this->media_video_capture = value;
 			break;
 		case QWebEnginePage::Feature::DesktopVideoCapture:
-			this->_desktop_video_capture = value;
+			this->desktop_audio_video_capture = value;
 			break;
 		case QWebEnginePage::Feature::DesktopAudioVideoCapture:
-			this->_desktop_audio_video_capture = value;
+			this->desktop_audio_video_capture = value;
 			break;
 	}
 }
