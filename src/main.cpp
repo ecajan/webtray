@@ -1,168 +1,59 @@
-#include <QtCore/QTimer>
-#include <QtGui/QCloseEvent>
-#include <QtWebEngineCore/QWebEngineNotification>
-#include <QtWebEngineCore/QWebEnginePage>
-#include <QtWebEngineCore/QWebEngineProfile>
-#include <QtWebEngineCore/QWebEngineSettings>
-#include <QtWebEngineWidgets/QWebEngineView>
 #include <QtWidgets/QApplication>
-#include <QtWidgets/QLayout>
-#include <QtWidgets/QMainWindow>
-#include <QtWidgets/QMenu>
-#include <QtWidgets/QMessageBox>
-#include <QtWidgets/QSystemTrayIcon>
-#include <QtWidgets/QWidget>
+
 #include <iostream>
 
-class MainWindow : public QMainWindow
+#include "permissionmanager.hpp"
+#include "tray.hpp"
+#include "webwindow.hpp"
+
+QString
+extract_url(const QStringList arguments)
 {
-public:
-	void closeEvent(QCloseEvent *event)
-	{
-		this->hide();
-		event->ignore();
+	for (const auto &argument : arguments) {
+		if (!argument.endsWith("webtray") && !argument.startsWith("--")) {
+			return argument;
+		}
 	}
-};
+	return "";
+}
 
 int
 main(int argc, char **argv)
 {
 	QApplication app(argc, argv);
-	bool start_hidden = true;
-	QUrl url;
+	app.setQuitOnLastWindowClosed(false);
 
-	for (auto argument : app.arguments()) {
-		if (argument == "--open-at-startup") {
-			start_hidden = false;
-		} else {
-			url = argument;
-		}
-	}
+	QString url = extract_url(app.arguments());
 
-	if (url.url().toStdString() == argv[0]) {
-		std::cerr << "webtray <url> [--open-at-startup]\n";
+	if (url.isEmpty()) {
+		std::cerr << "webtray [--open-at-startup] <url>\n";
 		return -1;
 	}
 
-	MainWindow main_window;
+	WebWindow webwindow(url);
+	Tray tray;
+	bool start_hidden = not app.arguments().contains("--open-at-startup");
 
-	QSystemTrayIcon tray;
-	QMenu menu;
-
-	QWebEngineProfile profile(url.host().toStdString().c_str());
-	QWebEnginePage page(&profile);
-	QWebEngineView view;
-
-	QAction *app_action = menu.addAction("Element");
-	menu.addSeparator();
-	QAction *quit_action = menu.addAction("Quit");
-
-	menu.connect(&menu, &QMenu::triggered, [&](QAction *action) {
-		if (action == app_action) {
-			main_window.setVisible(!main_window.isVisible());
-		} else if (action == quit_action) {
-			main_window.close();
-			page.windowCloseRequested();
-			app.quit();
-		}
-	});
-
-	view.setPage(&page);
-	view.setUrl(url);
-
-	tray.setContextMenu(&menu);
-
-	tray.connect(&tray,
-	             &QSystemTrayIcon::activated,
-	             [&](const QSystemTrayIcon::ActivationReason reason) {
-								 switch (reason) {
-									 case QSystemTrayIcon::Trigger:
-										 main_window.setVisible(!main_window.isVisible());
-										 break;
-									 default:
-										 break;
-								 }
-							 });
-
-	view.connect(&view, &QWebEngineView::iconChanged, [&](const QIcon icon) {
+	webwindow.connect_icon_changed([&](auto icon) {
 		tray.setIcon(icon);
 		tray.show();
 	});
 
-	view.connect(&view, &QWebEngineView::titleChanged, [&](const QString title) {
-		tray.setToolTip(title);
-		app_action->setText(title);
+	webwindow.connect_title_changed([&](auto title) { tray.set_title(title); });
+
+	webwindow.connect_notification([&](auto notification) {
+		tray.send_notification(std::move(notification));
 	});
 
-	page.settings()->setAttribute(QWebEngineSettings::ScreenCaptureEnabled, true);
-	page.settings()->setAttribute(QWebEngineSettings::WebRTCPublicInterfacesOnly,
-	                              false);
-	page.settings()->setAttribute(QWebEngineSettings::ScrollAnimatorEnabled,
-	                              false);
+	tray.connect_toggle([&]() { webwindow.toggle_visibility(); });
+	tray.connect_quit([&]() { webwindow.quit(); });
+	tray.connect_permission_changed(
+		[&](auto feature, auto value) { webwindow.set_feature(feature, value); });
+	tray.connect_reset_cookies([&]() { webwindow.reset_cookies(); });
 
-	profile.setPushServiceEnabled(true);
-	profile.setNotificationPresenter(
-		[&](std::unique_ptr<QWebEngineNotification> notification) {
-			tray.showMessage(notification->title(),
-		                   notification->message(),
-		                   QSystemTrayIcon::MessageIcon::Information,
-		                   3000);
-		});
-
-	page.connect(&page,
-	             &QWebEnginePage::featurePermissionRequested,
-	             [&](const QUrl origin, QWebEnginePage::Feature feature) {
-								 QString feature_name;
-
-								 switch (feature) {
-									 case QWebEnginePage::Feature::MouseLock:
-										 feature_name = "lock the mouse";
-										 break;
-									 case QWebEnginePage::Feature::Geolocation:
-										 feature_name = "your location information";
-										 break;
-									 case QWebEnginePage::Feature::Notifications:
-										 feature_name = "send notifications";
-										 break;
-									 case QWebEnginePage::Feature::MediaAudioCapture:
-										 feature_name = "capture audio";
-										 break;
-									 case QWebEnginePage::Feature::MediaVideoCapture:
-										 feature_name = "capture video";
-										 break;
-									 case QWebEnginePage::Feature::MediaAudioVideoCapture:
-										 feature_name = "capture audio and video";
-										 break;
-									 case QWebEnginePage::Feature::DesktopVideoCapture:
-										 feature_name = "capture video from your desktop";
-										 break;
-									 case QWebEnginePage::Feature::DesktopAudioVideoCapture:
-										 feature_name = "capture audio and video from your desktop";
-										 break;
-								 }
-
-								 QMessageBox dialog(QMessageBox::Icon::Question,
-		                                "Permission",
-		                                "Do you want to grant permission to " +
-		                                  feature_name + "?",
-		                                QMessageBox::StandardButton::Yes |
-		                                  QMessageBox::StandardButton::No);
-								 int res = dialog.exec();
-
-								 if (res == QMessageBox::Yes) {
-									 page.setFeaturePermission(
-										 origin, feature, QWebEnginePage::PermissionGrantedByUser);
-								 } else {
-									 page.setFeaturePermission(
-										 origin, feature, QWebEnginePage::PermissionDeniedByUser);
-								 }
-							 });
-
-	main_window.setCentralWidget(&view);
-	main_window.show();
+	webwindow.show();
 	if (start_hidden) {
-		main_window.hide();
+		webwindow.hide();
 	}
-	app.setQuitOnLastWindowClosed(false);
 	return app.exec();
 }
