@@ -1,10 +1,12 @@
 #include <QtGui/QCloseEvent>
+#include <QtGui/QDesktopServices>
 #include <QtWebEngineCore/QWebEngineCookieStore>
+#include <QtWebEngineCore/QWebEngineNewWindowRequest>
+#include <QtWidgets/QApplication>
+#include <iostream>
 
 #include "permissionmanager.hpp"
 #include "webwindow.hpp"
-#include <QtWidgets/QApplication>
-#include <iostream>
 
 WebWindow::WebWindow(const QString &url)
 	: QMainWindow()
@@ -41,6 +43,12 @@ WebWindow::web_configure()
 	                   &QWebEnginePage::featurePermissionRequested,
 	                   [&](const QUrl origin, QWebEnginePage::Feature feature) {
 											 this->permission_requested(origin, feature);
+										 });
+
+	this->page.connect(&this->page,
+	                   &QWebEnginePage::newWindowRequested,
+	                   [=](QWebEngineNewWindowRequest &request) {
+											 QDesktopServices::openUrl(request.requestedUrl());
 										 });
 }
 
