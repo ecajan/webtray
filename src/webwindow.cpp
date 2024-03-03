@@ -3,6 +3,8 @@
 #include <QtWebEngineCore/QWebEngineCookieStore>
 #include <QtWebEngineCore/QWebEngineNewWindowRequest>
 #include <QtWidgets/QApplication>
+#include <QtCore/QProcess>
+#include <filesystem>
 #include <iostream>
 
 #include "permissionmanager.hpp"
@@ -17,7 +19,7 @@ WebWindow::WebWindow(const QString &url)
 	this->web_configure();
 
 	this->profile.setPersistentCookiesPolicy(
-		QWebEngineProfile::ForcePersistentCookies);
+		QWebEngineProfile::AllowPersistentCookies);
 
 	this->view.setPage(&this->page);
 	this->view.setUrl(url);
@@ -102,12 +104,16 @@ WebWindow::permissions()
 void
 WebWindow::reset_cookies()
 {
-	this->profile.cookieStore()->deleteAllCookies();
-	this->profile.cookieStore()->loadAllCookies();
-	this->profile.clearHttpCache();
-	this->profile.clearAllVisitedLinks();
-	this->profile.clientCertificateStore();
-	this->view.reload();
+	std::filesystem::remove_all(this->profile.persistentStoragePath().toStdString());
+	QProcess process;
+	QStringList args = QApplication::instance()->arguments();
+
+	if (!args.contains("--open-at-startup")) {
+		args.append("--open-at-startup");
+	}
+
+	process.startDetached(args.front(), args);
+	this->quit();
 }
 
 void
