@@ -8,5 +8,11 @@ build:
 run: build
 	./target/webtray ${URL}
 
+user_install: build
+	install ./target/webtray ~/.local/bin/webtray
 
-.PHONY: build
+install:
+	install ./target/webtray /usr/local/bin/webtray
+
+
+.PHONY: build user_install install
