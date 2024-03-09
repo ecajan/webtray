@@ -1,5 +1,6 @@
 #include <QtGui/QCloseEvent>
 #include <QtGui/QDesktopServices>
+#include <QtWebEngineCore/QWebEngineFullScreenRequest>
 #include <QtWebEngineCore/QWebEngineCookieStore>
 #include <QtWebEngineCore/QWebEngineNewWindowRequest>
 #include <QtWidgets/QApplication>
@@ -38,6 +39,7 @@ WebWindow::web_configure()
 
 	this->page.settings()->setAttribute(QWebEngineSettings::ScrollAnimatorEnabled,
 	                                    false);
+	this->page.settings()->setAttribute(QWebEngineSettings::FullScreenSupportEnabled, true);
 
 	this->profile.setPushServiceEnabled(true);
 
@@ -52,6 +54,15 @@ WebWindow::web_configure()
 	                   [=](QWebEngineNewWindowRequest &request) {
 											 QDesktopServices::openUrl(request.requestedUrl());
 										 });
+
+	this->page.connect(&this->page, &QWebEnginePage::fullScreenRequested, [=](QWebEngineFullScreenRequest request) {
+		request.accept();
+		if (request.toggleOn()) {
+			this->showFullScreen();
+		} else {
+			this->showNormal();
+		}
+	});
 }
 
 void
