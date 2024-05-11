@@ -7,7 +7,6 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QFileDialog>
 #include <filesystem>
-#include <iostream>
 
 #include "QtWebEngineCore/qwebenginedownloadrequest.h"
 #include "permissionmanager.hpp"
