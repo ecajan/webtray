@@ -1,13 +1,15 @@
+#include <QtCore/QProcess>
 #include <QtGui/QCloseEvent>
 #include <QtGui/QDesktopServices>
-#include <QtWebEngineCore/QWebEngineFullScreenRequest>
 #include <QtWebEngineCore/QWebEngineCookieStore>
+#include <QtWebEngineCore/QWebEngineFullScreenRequest>
 #include <QtWebEngineCore/QWebEngineNewWindowRequest>
 #include <QtWidgets/QApplication>
-#include <QtCore/QProcess>
+#include <QtWidgets/QFileDialog>
 #include <filesystem>
 #include <iostream>
 
+#include "QtWebEngineCore/qwebenginedownloadrequest.h"
 #include "permissionmanager.hpp"
 #include "webwindow.hpp"
 
@@ -39,7 +41,8 @@ WebWindow::web_configure()
 
 	this->page.settings()->setAttribute(QWebEngineSettings::ScrollAnimatorEnabled,
 	                                    false);
-	this->page.settings()->setAttribute(QWebEngineSettings::FullScreenSupportEnabled, true);
+	this->page.settings()->setAttribute(
+		QWebEngineSettings::FullScreenSupportEnabled, true);
 
 	this->profile.setPushServiceEnabled(true);
 
@@ -49,20 +52,36 @@ WebWindow::web_configure()
 											 this->permission_requested(origin, feature);
 										 });
 
+	this->profile.connect(
+		&this->profile,
+		&QWebEngineProfile::downloadRequested,
+		[&](QWebEngineDownloadRequest *request) {
+			const QUrl url = QFileDialog::getSaveFileUrl(
+				this,
+				"",
+				QUrl(this->profile.downloadPath() + "/" + request->downloadFileName()));
+			if (!url.isEmpty()) {
+				request->setDownloadFileName(url.path());
+				request->accept();
+			}
+		});
+
 	this->page.connect(&this->page,
 	                   &QWebEnginePage::newWindowRequested,
 	                   [=](QWebEngineNewWindowRequest &request) {
 											 QDesktopServices::openUrl(request.requestedUrl());
 										 });
 
-	this->page.connect(&this->page, &QWebEnginePage::fullScreenRequested, [=](QWebEngineFullScreenRequest request) {
-		request.accept();
-		if (request.toggleOn()) {
-			this->showFullScreen();
-		} else {
-			this->showNormal();
-		}
-	});
+	this->page.connect(&this->page,
+	                   &QWebEnginePage::fullScreenRequested,
+	                   [=](QWebEngineFullScreenRequest request) {
+											 request.accept();
+											 if (request.toggleOn()) {
+												 this->showFullScreen();
+											 } else {
+												 this->showNormal();
+											 }
+										 });
 }
 
 void
@@ -115,7 +134,8 @@ WebWindow::permissions()
 void
 WebWindow::reset_cookies()
 {
-	std::filesystem::remove_all(this->profile.persistentStoragePath().toStdString());
+	std::filesystem::remove_all(
+		this->profile.persistentStoragePath().toStdString());
 	QProcess process;
 	QStringList args = QApplication::instance()->arguments();
 
