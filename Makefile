@@ -11,11 +11,8 @@ run: build
 clean:
 	@rm -rf target
 
-user_install: build
-	install ./target/webtray ~/.local/bin/webtray
-
 install:
-	install ./target/webtray /usr/local/bin/webtray
+	install ./target/webtray ${DESTDIR}/usr/bin/webtray
 
 
-.PHONY: build user_install install
+.PHONY: build install
