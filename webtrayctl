@@ -1,0 +1,57 @@
+#!/bin/sh
+
+help() {
+	echo webtrayctl - install and remove webtray applications
+	echo
+	echo "    install   <url> <name> [--open-at-startup]"
+	echo "    uninstall <name>"
+	echo
+	exit
+}
+
+install_webapp() {
+	mkdir -p ~/.local/share/webtray/icons
+	mkdir -p ~/.local/share/webtray/applications/
+
+	url="$1"
+	name="$2"
+	extra="$3"
+
+	tmp_icon_name="$name-$$.ico"
+
+	curl -s "$url/$(curl -s "$url" | grep 'rel="[^"]*icon.*\.ico' | sed 's/^.*href="\([^"]*\)".*/\1/g')" --output "/tmp/$tmp_icon_name"
+
+	magick "/tmp/${tmp_icon_name}[0]" -flatten "$HOME/.local/share/webtray/icons/$name.png"
+
+	echo "[Desktop Entry]
+Type=Application
+Name=$name
+Exec=$(which webtray) '$url' $extra
+Icon=$HOME/.local/share/webtray/icons/$name.png
+Terminal=false
+Categories=WebApp
+" > "$HOME/.local/share/webtray/applications/webtray-$name.desktop"
+
+	xdg-desktop-menu install "$HOME/.local/share/webtray/applications/webtray-$name.desktop"
+
+	rm "/tmp/$tmp_icon_name"
+}
+
+remove_webapp() {
+	name="$1"
+	xdg-desktop-menu uninstall "$HOME/.local/share/webtray/applications/webtray-$name.desktop"
+	rm "$HOME/.local/share/webtray/applications/$name.desktop" "$HOME/.local/share/webtray/icons/$name.png"
+}
+
+
+case "$1" in
+	install)
+		[ -z "$2" -o -z "$3" ] && help
+		install_webapp "$2" "$3"
+		;;
+	uninstall)
+		[ -z "$2" ] && help
+		remove_webapp "$2"
+		;;
+	*)help;;
+esac

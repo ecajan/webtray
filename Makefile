@@ -13,6 +13,7 @@ clean:
 
 install:
 	install ./target/webtray ${DESTDIR}/usr/bin/webtray
+	install ./webtrayctl ${DESTDIR}/usr/bin/webtrayctl
 
 
 .PHONY: build install
