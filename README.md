@@ -8,7 +8,7 @@ This project helps you to create web-apps which you can dock into the systray.
 webtray <url> [--open-at-startup]
 ```
 
-If you use `--hidden` it will start in the systray.
+If you do not use `--open-at-startup` it will start in the systray.
 
 ## Build
 
