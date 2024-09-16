@@ -75,6 +75,7 @@
               description = "WebTray Instance for ${name}";
               serviceConfig = {
                 Type = "simple";
+                Restart = "on-failure";
                 ExecStart = "${self.packages.${pkgs.system}.default}/bin/webtray ${value.url}${
                   if value.openInWindow then " --open-at-startup" else ""
                 }";
