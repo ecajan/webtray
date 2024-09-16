@@ -24,5 +24,7 @@
           pkgs.kdePackages.qtwayland
         ];
       };
+
+      overlays.default = final: prev: { inherit (self.packages.${prev.system}) webtray; };
     };
 }
