@@ -28,9 +28,52 @@
       overlays.default = final: prev: { inherit (self.packages.${prev.system}) webtray; };
 
       nixosModules.default =
-        { pkgs, ... }:
         {
-          environment.systemPackages = [ self.packages.${pkgs.system}.default ];
+          pkgs,
+          lib,
+          config,
+          ...
+        }:
+        {
+          options.webtray.instances = lib.mkOption {
+            type = lib.types.attrsOf (
+              lib.types.submodule {
+                options = {
+                  url = lib.mkOption {
+                    description = "URL of the WebTray instance";
+                    type = lib.types.strMatching "https?://[a-z0-9.]*";
+                  };
+                  autoStart = lib.mkOption {
+                    description = "WebTray Instances to start on login";
+                    type = lib.types.bool;
+                    default = true;
+                  };
+                  openInWindow = lib.mkOption {
+                    description = "Open Instance as Window";
+                    type = lib.types.bool;
+                    default = false;
+                  };
+                };
+              }
+            );
+          };
+
+          config = {
+            environment.systemPackages = [ self.packages.${pkgs.system}.default ];
+
+            systemd.user.services = builtins.mapAttrs (name: value: {
+              enable = true;
+              after = if value.autoStart then [ "graphical-session.target" ] else [ ];
+              wantedBy = [ "default.target" ];
+              description = "WebTray Instance for ${name}";
+              serviceConfig = {
+                Type = "simple";
+                ExecStart = "${self.packages.${pkgs.system}}/bin/webtray ${value.url}${
+                  if value.openInWindow then " --open-at-startup" else ""
+                }";
+              };
+            }) config.webtray.instances;
+          };
         };
     };
 }
