@@ -41,7 +41,7 @@
                 options = {
                   url = lib.mkOption {
                     description = "URL of the WebTray instance";
-                    type = lib.types.strMatching "https?://[a-z0-9.]*";
+                    type = lib.types.strMatching "http[s]?://[a-z0-9.]*:?[0-9]*";
                   };
                   autoStart = lib.mkOption {
                     description = "WebTray Instances to start on login";
