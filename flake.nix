@@ -26,5 +26,11 @@
       };
 
       overlays.default = final: prev: { inherit (self.packages.${prev.system}) webtray; };
+
+      nixosModules.default =
+        { pkgs, ... }:
+        {
+          environment.systemPackages = [ self.packages.${pkgs.system}.default ];
+        };
     };
 }
