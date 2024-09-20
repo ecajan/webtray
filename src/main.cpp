@@ -1,6 +1,9 @@
 #include <QtWidgets/QApplication>
 
 #include <iostream>
+#include <thread>
+
+using namespace std::chrono_literals;
 
 #include "permissionmanager.hpp"
 #include "tray.hpp"
@@ -42,6 +45,7 @@ main(int argc, char **argv)
 
 	WebWindow webwindow(url);
 	Tray tray;
+
 	bool start_hidden = not app.arguments().contains("--open-at-startup");
 
 	for (auto feature : features) {
@@ -70,5 +74,10 @@ main(int argc, char **argv)
 	if (start_hidden) {
 		webwindow.hide();
 	}
+
+	while (!tray.isSystemTrayAvailable()) {
+		std::this_thread::sleep_for(50ms);
+	};
+
 	return app.exec();
 }
