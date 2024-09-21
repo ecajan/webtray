@@ -1,7 +1,6 @@
 #include <QtWidgets/QApplication>
 
 #include <iostream>
-#include <thread>
 
 using namespace std::chrono_literals;
 
@@ -33,51 +32,47 @@ extract_url(const QStringList arguments)
 int
 main(int argc, char **argv)
 {
-	QApplication app(argc, argv);
-	app.setQuitOnLastWindowClosed(false);
+	QApplication *app = new QApplication(argc, argv);
+	app->setQuitOnLastWindowClosed(false);
 
-	QString url = extract_url(app.arguments());
+	QString url = extract_url(app->arguments());
 
 	if (url.isEmpty()) {
 		std::cerr << "webtray [--open-at-startup] <url>\n";
 		return -1;
 	}
 
-	WebWindow webwindow(url);
-	Tray tray;
+	WebWindow *webwindow = new WebWindow(url);
+	Tray *tray = new Tray();
 
-	bool start_hidden = not app.arguments().contains("--open-at-startup");
+	bool start_hidden = not app->arguments().contains("--open-at-startup");
 
 	for (auto feature : features) {
-		tray.set_permission(feature, webwindow.permissions().get(feature));
+		tray->set_permission(feature, webwindow->permissions().get(feature));
 	}
 
-	webwindow.connect_icon_changed([&](auto icon) {
-		tray.setIcon(icon);
-		tray.show();
+	webwindow->connect_icon_changed([&](auto icon) {
+		tray->setIcon(icon);
+		tray->show();
 	});
 
-	webwindow.connect_title_changed([&](auto title) { tray.set_title(title); });
+	webwindow->connect_title_changed([&](auto title) { tray->set_title(title); });
 
-	webwindow.connect_notification([&](auto notification) {
-		tray.send_notification(std::move(notification));
+	webwindow->connect_notification([&](auto notification) {
+		tray->send_notification(std::move(notification));
 	});
 
-	tray.connect_toggle([&]() { webwindow.toggle_visibility(); });
-	tray.connect_quit([&]() { webwindow.quit(); });
-	tray.connect_permission_changed([&](auto feature, auto value) {
-		webwindow.permissions().set(feature, value);
+	tray->connect_toggle([&]() { webwindow->toggle_visibility(); });
+	tray->connect_quit([&]() { webwindow->quit(); });
+	tray->connect_permission_changed([&](auto feature, auto value) {
+		webwindow->permissions().set(feature, value);
 	});
-	tray.connect_reset_cookies([&]() { webwindow.reset_cookies(); });
+	tray->connect_reset_cookies([&]() { webwindow->reset_cookies(); });
 
-	webwindow.show();
+	webwindow->show();
 	if (start_hidden) {
-		webwindow.hide();
+		webwindow->hide();
 	}
 
-	while (!tray.isSystemTrayAvailable()) {
-		std::this_thread::sleep_for(50ms);
-	};
-
-	return app.exec();
+	return app->exec();
 }

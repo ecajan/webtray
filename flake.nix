@@ -14,14 +14,18 @@
       packages.x86_64-linux.default = pkgs.stdenv.mkDerivation {
         name = "webtray";
         src = self;
-        buildPhase = "qmake6 . && make";
+        buildPhase = "qmake . -- -webengine-webrtc-pipewire && make";
         installPhase = "mkdir -p $out/bin; install -t $out/bin webtray";
 
-        buildInputs = [
-          pkgs.kdePackages.wrapQtAppsHook
-          pkgs.kdePackages.qmake
-          pkgs.kdePackages.qtwebengine
-          pkgs.kdePackages.qtwayland
+        nativeBuildInputs = with pkgs; [
+          qt6.wrapQtAppsHook
+          makeWrapper
+        ];
+
+        buildInputs = with pkgs; [
+          qt6.qmake
+          qt6.full
+          qt6.qtbase
         ];
       };
 
