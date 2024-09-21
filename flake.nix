@@ -63,8 +63,8 @@
 
             systemd.user.services = builtins.mapAttrs (name: value: {
               enable = true;
-              after = if value.autoStart then [ "graphical-session.target" ] else [ ];
-              wantedBy = [ "default.target" ];
+              requires = if value.autoStart then [ "tray.target" ] else [ ];
+              wantedBy = [ "graphical-session.target" ];
               description = "WebTray Instance for ${name}";
               serviceConfig = {
                 Type = "simple";
