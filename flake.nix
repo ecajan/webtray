@@ -14,7 +14,7 @@
       packages.x86_64-linux.default = pkgs.stdenv.mkDerivation {
         name = "webtray";
         src = self;
-        buildPhase = "qmake . -- -webengine-webrtc-pipewire && make";
+        buildPhase = "qmake . && make";
         installPhase = "mkdir -p $out/bin; install -t $out/bin webtray";
 
         nativeBuildInputs = with pkgs; [
@@ -26,6 +26,7 @@
           qt6.qmake
           qt6.full
           qt6.qtbase
+          qt6.qtwayland
         ];
       };
 
