@@ -22,7 +22,6 @@ install_webapp() {
 	full_url=$(curl -Ls -o /dev/null -w%{url_effective} $url)
 
 	if [ -z "$iconfile" ]; then
-		echo using favicon as icon file
 		full_url_cancled=$(echo $full_url | sed 's/\//\\\//g')
 		# get the linkt to the icon by first searching for every <link> tag, containing a icon link
 		# then getting the string of the first href in the first link, and then appending the extended url to the beginning, if it is not a relative path (only works for http and https protocols)
@@ -38,7 +37,7 @@ install_webapp() {
 			iconfile="$HOME/.local/share/webtray/icons/$name.png"
 		else
 			echo "the website does not seem to have a favicon"
-			echo "consider adding the local path to a favicon on your computer with the --icon argument"
+			echo "consider adding the path to a favicon on your computer with the --icon argument"
 		fi
 	fi
 
@@ -80,8 +79,6 @@ do
 			shift
 			;;
 		"--open-at-startup")
-			echo we are opening at startup
-			echo "$argument"
 			open_at_startup="--open-at-startup"
 			shift
 			;;
