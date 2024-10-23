@@ -3,7 +3,7 @@
 help() {
 	echo webtrayctl - install and remove webtray applications
 	echo
-	echo "    install   <url> <name> [--open-at-startup]"
+	echo "    install   <url> <name> [--open-at-startup] [--icon <icon-file>]"
 	echo "    uninstall <name>"
 	echo
 	exit
@@ -15,43 +15,95 @@ install_webapp() {
 
 	url="$1"
 	name="$2"
-	extra="$3"
+	open_at_startup="$3"
+	iconfile="$4"
+	
 
-	tmp_icon_name="$name-$$.ico"
+	full_url=$(curl -Ls -o /dev/null -w%{url_effective} $url)
 
-	curl -s "$url/$(curl -s "$url" | grep 'rel="[^"]*icon.*\.ico' | sed 's/^.*href="\([^"]*\)".*/\1/g')" --output "/tmp/$tmp_icon_name"
+	if [ -z "$iconfile" ]; then
+		full_url_cancled=$(echo $full_url | sed 's/\//\\\//g')
+		# get the linkt to the icon by first searching for every <link> tag, containing a icon link
+		# then getting the string of the first href in the first link, and then appending the extended url to the beginning, if it is not a relative path (only works for http and https protocols)
+		iconfile=$(curl -Ls "$url" | grep -o "<link[^>]*rel=[\"']\\(shortcut \\)\\?icon[\"'][^>]*>" | head -n 1 | sed "s/.*href=[\"']\\([^\"]*\\)[\"'].*/\\1/g" | sed "/^http/!s/.*/$full_url_cancled\\/&/")
+	
+		file_extension=$(echo "$iconfile" | grep -o '\.[^.]*$')
+		tmp_icon_name="$name$file_extension"
 
-	magick "/tmp/${tmp_icon_name}[0]" -flatten "$HOME/.local/share/webtray/icons/$name.png"
+		if [ -n "$iconfile" ]; then
+			curl -s "$iconfile" --output "/tmp/${tmp_icon_name}" 
+			magick "/tmp/${tmp_icon_name}[0]" "$HOME/.local/share/webtray/icons/$name.png"
+			rm "/tmp/$tmp_icon_name"
+			iconfile="$HOME/.local/share/webtray/icons/$name.png"
+		else
+			echo "the website does not seem to have a favicon"
+			echo "consider adding the path to a favicon on your computer with the --icon argument"
+		fi
+	fi
 
 	echo "[Desktop Entry]
 Type=Application
 Name=$name
-Exec=$(which webtray) '$url' $extra
-Icon=$HOME/.local/share/webtray/icons/$name.png
+Exec=$(which webtray) '$full_url' "$open_at_startup" "$iconfile"
+Icon="$iconfile"
 Terminal=false
 Categories=WebApp
 " > "$HOME/.local/share/webtray/applications/webtray-$name.desktop"
 
 	xdg-desktop-menu install "$HOME/.local/share/webtray/applications/webtray-$name.desktop"
 
-	rm "/tmp/$tmp_icon_name"
+	exit
 }
 
 remove_webapp() {
 	name="$1"
 	xdg-desktop-menu uninstall "$HOME/.local/share/webtray/applications/webtray-$name.desktop"
-	rm "$HOME/.local/share/webtray/applications/$name.desktop" "$HOME/.local/share/webtray/icons/$name.png"
+	rm "$HOME/.local/share/webtray/applications/webtray-$name.desktop" "$HOME/.local/share/webtray/icons/$name.png"
+	exit
 }
 
+while true
+do
+	case "$1" in
+		install)
+			action="install"
+			shift
+			url="$1"
+			name="$2"
+			shift 2
+			;;
+		uninstall)
+			action="uninstall"
+			shift
+			toRemove="$1"
+			shift
+			;;
+		"--open-at-startup")
+			open_at_startup="--open-at-startup"
+			shift
+			;;
+		"--icon")
+			shift
+			icon="$1"
+			[ -z "$1" ] && help
+			shift
+			;;
+		*)help;;
+	esac
+	if [ -z "$1" ]; then
+		break
+	fi
+	#shift 1 || break
+done
 
-case "$1" in
+case "$action" in
 	install)
-		[ -z "$2" -o -z "$3" ] && help
-		install_webapp "$2" "$3"
+		[ -z "$url" -o -z "$name" ] && help
+		install_webapp "$url" "$name" "$open_at_startup" "$icon"
 		;;
 	uninstall)
-		[ -z "$2" ] && help
-		remove_webapp "$2"
+		[ -z "$toRemove" ] && help
+		remove_webapp "$toRemove"
 		;;
 	*)help;;
 esac
