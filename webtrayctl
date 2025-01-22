@@ -25,8 +25,11 @@ install_webapp() {
 		full_url_cancled=$(echo $full_url | sed 's/\//\\\//g')
 		# get the linkt to the icon by first searching for every <link> tag, containing a icon link
 		# then getting the string of the first href in the first link, and then appending the extended url to the beginning, if it is not a relative path (only works for http and https protocols)
-		iconfile=$(curl -Ls "$url" | grep -o "<link[^>]*rel=[\"']\\(shortcut \\)\\?icon[\"'][^>]*>" | head -n 1 | sed "s/.*href=[\"']\\([^\"]*\\)[\"'].*/\\1/g" | sed "/^http/!s/.*/$full_url_cancled\\/&/")
-	
+		if echo "$full_url" | grep 'x\.com' > /dev/null; then
+			iconfile='https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Logo_of_Twitter.svg/240px-Logo_of_Twitter.svg.png'
+		else
+			iconfile=$(curl -Ls "$url" | grep -o "<link[^>]*rel=[\"']\\(shortcut \\)\\?icon[\"'][^>]*>" | head -n 1 | sed "s/.*href=[\"']\\([^\"]*\\)[\"'].*/\\1/g" | sed "/^http/!s/.*/$full_url_cancled\\/&/")
+		fi
 		file_extension=$(echo "$iconfile" | grep -o '\.[^.]*$')
 		tmp_icon_name="$name$file_extension"
 

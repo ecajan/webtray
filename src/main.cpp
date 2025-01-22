@@ -18,15 +18,21 @@ const QWebEnginePage::Feature features[] = {
 	QWebEnginePage::Feature::MediaVideoCapture,
 };
 
-QString
-extract_url(const QStringList arguments)
+void
+extract_url(const QStringList arguments, QString *url, QString *icon)
 {
+	int index = 0;
+
 	for (const auto &argument : arguments) {
 		if (!argument.endsWith("webtray") && !argument.startsWith("--")) {
-			return argument;
+			if (index == 0) {
+				*url = argument;
+			} else {
+				*icon = argument;
+			}
+			index += 1;
 		}
 	}
-	return "";
 }
 
 int
@@ -35,7 +41,8 @@ main(int argc, char **argv)
 	QApplication *app = new QApplication(argc, argv);
 	app->setQuitOnLastWindowClosed(false);
 
-	QString url = extract_url(app->arguments());
+	QString url, iconpath;
+	extract_url(app->arguments(), &url, &iconpath);
 
 	if (url.isEmpty()) {
 		std::cerr << "webtray [--open-at-startup] <url>\n";
@@ -52,7 +59,11 @@ main(int argc, char **argv)
 	}
 
 	webwindow->connect_icon_changed([&](auto icon) {
-		tray->setIcon(icon);
+		if (iconpath.isEmpty()) {
+			tray->setIcon(icon);
+		} else {
+			tray->setIcon(QIcon(iconpath));
+		}
 		tray->show();
 	});
 
